@@ -108,7 +108,9 @@ def scrape_website(id: int = Query(1237, description="ID da equipa transfermarkt
                                 # Define a custom format for this date
                                 custom_date_format = "%d/%m/%Y"
                                 data_obj = datetime.strptime(data_original, custom_date_format)
-                                data_formatada = data_obj.strftime("%d %b. %y").replace(data_obj.strftime("%b"), month_mapping[data_obj.strftime("%b")])
+                                
+                                # Format the date for Google Sheets
+                                google_sheets_date_format = data_obj.strftime("%Y-%m-%d")
 
                                 hora = row.select_one('td:nth-of-type(3)').get_text(strip=True)
                                 equipe_casa = row.select_one('td:nth-of-type(5) a').get_text(strip=True)
@@ -121,7 +123,7 @@ def scrape_website(id: int = Query(1237, description="ID da equipa transfermarkt
                                 # Append data to the list
                                 scraped_fixture_data.append({
                                     "Jornada": jornada.get_text(strip=True),
-                                    "Data": data_formatada,
+                                    "Data": google_sheets_date_format,
                                     "Hora": hora,
                                     "Equipa_da_casa": equipe_casa,
                                     "Resultado": resultado,
@@ -177,5 +179,3 @@ def scrape_website(id: int = Query(1237, description="ID da equipa transfermarkt
     except Exception as e:
         response_model = CompetitionDataResponse(success=False, error_message=str(e))
         return JSONResponse(content=response_model.dict())
-
-
