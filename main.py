@@ -171,12 +171,12 @@ def scrape_website(id: int = Query(1237, description="ID da equipa transfermarkt
             competition_data_items = []
             for item in data_dict:
                 competition_data_items.append(CompetitionDataItem(
-                    position=item[0],
-                    blank_field=item[1],
-                    team_name=item[2],
-                    matches_played=item[3],
-                    wins=item[4],
-                    points=item[5]
+                    Posição=item[0],
+                    Linha_Em_Branco=item[1],
+                    Nome=item[2],
+                    Jogos=item[3],
+                    Empates=item[4],
+                    Pontos=item[5]
                 ))
 
             response_model = CompetitionDataResponse(success=True, fixture_data=scraped_fixture_data, competition_data=competition_data_items)
