@@ -6,7 +6,7 @@ from fastapi.responses import RedirectResponse, JSONResponse
 from typing import List
 from pydantic import BaseModel
 from datetime import datetime
-from dateutil import parser  # Import dateutil.parser for date parsing
+from dateutil import parser
 import pandas as pd
 
 # Define base_url
