@@ -47,12 +47,12 @@ class FixtureDataItem(BaseModel):
     Equipa_visitante: str
 
 class CompetitionDataItem(BaseModel):
-    position: str
-    blank_field: str
-    team_name: str
-    matches_played: str
-    wins: str
-    points: str
+    Posição: str
+    Linha_Em_Branco: str
+    Nome: str
+    Jogos: str
+    Empates: str
+    Pontos: str
 
 class FixtureDataResponse(BaseModel):
     fixture_data: List[FixtureDataItem]
