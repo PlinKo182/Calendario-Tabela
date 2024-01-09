@@ -6,7 +6,6 @@ from fastapi.responses import RedirectResponse, JSONResponse
 from typing import List
 from pydantic import BaseModel
 from datetime import datetime
-from dateutil import parser
 import pandas as pd
 
 # Define base_url
@@ -100,7 +99,7 @@ def scrape_website(id: int = Query(1237, description="ID da equipa transfermarkt
                             # Extracting relevant data only if the matchday is present
                             jornada = row.select_one('td:nth-of-type(1) a')
                             if jornada:
-                                # Parsing and formatting the date using dateutil.parser
+                                # Parsing and formatting the date using datetime (without dateutil.parser)
                                 data_original = row.select_one('td:nth-of-type(2)').get_text(strip=True)
 
                                 # Remove day abbreviation (e.g., 'sáb')
@@ -108,39 +107,26 @@ def scrape_website(id: int = Query(1237, description="ID da equipa transfermarkt
 
                                 # Define a custom format for this date
                                 custom_date_format = "%d/%m/%Y"
+                                data_obj = datetime.strptime(data_original, custom_date_format)
+                                data_formatada = data_obj.strftime("%d %b. %y").replace(data_obj.strftime("%b"), month_mapping[data_obj.strftime("%b")])
 
-                                try:
-                                    data_obj = parser.parse(data_original, format=custom_date_format)
-                                    data_formatada = data_obj.strftime("%d %b. %y").replace(data_obj.strftime("%b"), month_mapping[data_obj.strftime("%b")])
+                                hora = row.select_one('td:nth-of-type(3)').get_text(strip=True)
+                                equipe_casa = row.select_one('td:nth-of-type(5) a').get_text(strip=True)
+                                equipe_visitante = row.select_one('td:nth-of-type(7) a').get_text(strip=True)
 
-                                    hora = row.select_one('td:nth-of-type(3)').get_text(strip=True)
-                                    equipe_casa = row.select_one('td:nth-of-type(5) a').get_text(strip=True)
-                                    equipe_visitante = row.select_one('td:nth-of-type(7) a').get_text(strip=True)
+                                # Modify the way of getting the result
+                                resultado_span = row.select_one('td:nth-of-type(11) span')
+                                resultado = resultado_span.get_text(strip=True) if resultado_span else '-'
 
-                                    # Modify the way of getting the result
-                                    resultado_span = row.select_one('td:nth-of-type(11) span')
-                                    resultado = resultado_span.get_text(strip=True) if resultado_span else '-'
-
-                                    # Append data to the list
-                                    scraped_fixture_data.append({
-                                        "Jornada": jornada.get_text(strip=True),
-                                        "Data": data_formatada,
-                                        "Hora": hora,
-                                        "Equipa_da_casa": equipe_casa,
-                                        "Resultado": resultado,
-                                        "Equipa_visitante": equipe_visitante
-                                    })
-
-                                except ValueError as ve:
-                                    print(f"Error parsing date: {ve}")
-                                    scraped_fixture_data.append({
-                                        "Jornada": jornada.get_text(strip=True),
-                                        "Data": data_original,  # Use the original date if parsing fails
-                                        "Hora": hora,
-                                        "Equipa_da_casa": equipe_casa,
-                                        "Resultado": resultado,
-                                        "Equipa_visitante": equipe_visitante
-                                    })
+                                # Append data to the list
+                                scraped_fixture_data.append({
+                                    "Jornada": jornada.get_text(strip=True),
+                                    "Data": data_formatada,
+                                    "Hora": hora,
+                                    "Equipa_da_casa": equipe_casa,
+                                    "Resultado": resultado,
+                                    "Equipa_visitante": equipe_visitante
+                                })
 
                         break
 
@@ -191,4 +177,5 @@ def scrape_website(id: int = Query(1237, description="ID da equipa transfermarkt
     except Exception as e:
         response_model = CompetitionDataResponse(success=False, error_message=str(e))
         return JSONResponse(content=response_model.dict())
+
 
