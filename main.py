@@ -1,11 +1,12 @@
 import requests
 from bs4 import BeautifulSoup
-from fastapi import FastAPI, Query, HTTPException
+from fastapi import FastAPI, Query
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import RedirectResponse, JSONResponse
-from typing import List, Any
+from typing import List
 from pydantic import BaseModel
 from datetime import datetime
+from dateutil import parser  # Import dateutil.parser for date parsing
 import pandas as pd
 
 # Define base_url
@@ -110,12 +111,9 @@ def scrape_website(id: int = Query(1237, description="ID da equipa transfermarkt
                             # Extracting relevant data only if the matchday is present
                             jornada = row.select_one('td:nth-of-type(1) a')
                             if jornada:
-                                # Parsing and formatting the date
+                                # Parsing and formatting the date using dateutil.parser
                                 data_original = row.select_one('td:nth-of-type(2)').get_text(strip=True)
-                                day_abbr = data_original.split(' ')[0].lower()
-                                day_abbr_english = day_mapping.get(day_abbr, day_abbr)
-                                data_modified = data_original.replace(day_abbr, day_abbr_english)
-                                data_obj = datetime.strptime(data_modified, "%a %d/%m/%Y")
+                                data_obj = parser.parse(data_original)
                                 data_formatada = data_obj.strftime("%d %b. %y").replace(data_obj.strftime("%b"), month_mapping[data_obj.strftime("%b")])
 
                                 hora = row.select_one('td:nth-of-type(3)').get_text(strip=True)
