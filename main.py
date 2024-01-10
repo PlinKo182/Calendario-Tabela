@@ -29,6 +29,7 @@ month_mapping = {
 
 class FixtureDataItem(BaseModel):
     Jornada: str
+    Linha_Em_Branco: str
     Data: str
     Hora: str
     Equipa_da_casa: str
@@ -37,7 +38,6 @@ class FixtureDataItem(BaseModel):
 
 class CompetitionDataItem(BaseModel):
     Posição: str
-    Linha_Em_Branco: str
     Nome: str
     Jogos: str
     Empates: str
@@ -166,7 +166,6 @@ def scrape_website(id: int = Query(1237, description="ID da equipa transfermarkt
             for item in data_dict:
                 competition_data_items.append(CompetitionDataItem(
                     Posição=item[0],
-                    Linha_Em_Branco=item[1],
                     Nome=item[2],
                     Jogos=item[3],
                     Empates=item[4],
