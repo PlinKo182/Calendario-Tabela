@@ -123,6 +123,7 @@ def scrape_website(id: int = Query(1237, description="ID da equipa transfermarkt
                                 # Append data to the list
                                 scraped_fixture_data.append({
                                     "Jornada": jornada.get_text(strip=True),
+                                    "Linha_Em_Branco": "",
                                     "Data": google_sheets_date_format,
                                     "Hora": hora,
                                     "Equipa_da_casa": equipe_casa,
