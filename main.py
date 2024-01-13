@@ -87,47 +87,45 @@ def scrape_website(id: int = Query(1237, description="ID da equipa transfermarkt
             boxes = soup.find_all('div', class_='box')
 
             # Iterating over the divs found
-            for i, box in enumerate(boxes, start=1):
-                # If it's the 6th box, get the content
-                if i == 6:
-                    # Finding the table of games within the box
-                    table = box.find('table')
-                    if table:
-                        # Iterating over the rows of the table
-                        for row in table.select('tbody tr'):
-                            # Extracting relevant data only if the matchday is present
-                            jornada = row.select_one('td:nth-of-type(1) a')
-                            if jornada:
-                                # Parsing and formatting the date using datetime (without dateutil.parser)
-                                data_original = row.select_one('td:nth-of-type(2)').get_text(strip=True)
+            for box in boxes:
+                # Finding the table of games within the box
+                table = box.find('table')
+                if table:
+                    # Iterating over the rows of the table
+                    for row in table.select('tbody tr'):
+                        # Extracting relevant data only if the matchday is present
+                        jornada = row.select_one('td:nth-of-type(1) a')
+                        if jornada:
+                            # Parsing and formatting the date using datetime (without dateutil.parser)
+                            data_original = row.select_one('td:nth-of-type(2)').get_text(strip=True)
 
-                                # Remove day abbreviation (e.g., 'sáb')
-                                data_original = data_original.split(' ', 1)[1]  # Remove the first word
+                            # Remove day abbreviation (e.g., 'sáb')
+                            data_original = data_original.split(' ', 1)[1]  # Remove the first word
 
-                                # Define a custom format for this date
-                                custom_date_format = "%d/%m/%Y"
-                                data_obj = datetime.strptime(data_original, custom_date_format)
+                            # Define a custom format for this date
+                            custom_date_format = "%d/%m/%Y"
+                            data_obj = datetime.strptime(data_original, custom_date_format)
                                 
-                                # Format the date for Google Sheets
-                                google_sheets_date_format = data_obj.strftime("%Y-%m-%d")
+                            # Format the date for Google Sheets
+                            google_sheets_date_format = data_obj.strftime("%Y-%m-%d")
 
-                                hora = row.select_one('td:nth-of-type(3)').get_text(strip=True)
-                                equipe_casa = row.select_one('td:nth-of-type(5) a').get_text(strip=True)
-                                equipe_visitante = row.select_one('td:nth-of-type(7) a').get_text(strip=True)
+                            hora = row.select_one('td:nth-of-type(3)').get_text(strip=True)
+                            equipe_casa = row.select_one('td:nth-of-type(5) a').get_text(strip=True)
+                            equipe_visitante = row.select_one('td:nth-of-type(7) a').get_text(strip=True)
 
-                                # Modify the way of getting the result
-                                resultado_span = row.select_one('td:nth-of-type(11) span')
-                                resultado = resultado_span.get_text(strip=True) if resultado_span else '-'
+                            # Modify the way of getting the result
+                            resultado_span = row.select_one('td:nth-of-type(11) span')
+                            resultado = resultado_span.get_text(strip=True) if resultado_span else '-'
 
-                                # Append data to the list
-                                scraped_fixture_data.append({
-                                    "Jornada": jornada.get_text(strip=True),
-                                    "Data": google_sheets_date_format,
-                                    "Hora": hora,
-                                    "Equipa_da_casa": equipe_casa,
-                                    "Resultado": resultado,
-                                    "Equipa_visitante": equipe_visitante
-                                })
+                            # Append data to the list
+                            scraped_fixture_data.append({
+                           "Jornada": jornada.get_text(strip=True),
+                            "Data": google_sheets_date_format,
+                            "Hora": hora,
+                            "Equipa_da_casa": equipe_casa,
+                            "Resultado": resultado,
+                            "Equipa_visitante": equipe_visitante
+                            })
 
                         break
 
