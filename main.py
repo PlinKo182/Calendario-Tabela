@@ -119,16 +119,13 @@ def scrape_website(id: int = Query(1237, description="ID da equipa transfermarkt
 
                             # Append data to the list
                             scraped_fixture_data.append({
-                           "Jornada": jornada.get_text(strip=True),
-                            "Data": google_sheets_date_format,
-                            "Hora": hora,
-                            "Equipa_da_casa": equipe_casa,
-                            "Resultado": resultado,
-                            "Equipa_visitante": equipe_visitante
+                                "Jornada": jornada.get_text(strip=True),
+                                "Data": google_sheets_date_format,
+                                "Hora": hora,
+                                "Equipa_da_casa": equipe_casa,
+                                "Resultado": resultado,
+                                "Equipa_visitante": equipe_visitante
                             })
-
-                       if scraped_fixture_data:
-                    break
 
             if not full_competition_link:
                 raise ValueError("Competition link not found")
