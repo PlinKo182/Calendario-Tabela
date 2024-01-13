@@ -1,4 +1,3 @@
-import { SpeedInsights } from "@vercel/speed-insights/next"
 import requests
 from bs4 import BeautifulSoup
 from fastapi import FastAPI, Query
