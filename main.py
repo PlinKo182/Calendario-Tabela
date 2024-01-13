@@ -127,7 +127,8 @@ def scrape_website(id: int = Query(1237, description="ID da equipa transfermarkt
                             "Equipa_visitante": equipe_visitante
                             })
 
-                        break
+                       if scraped_fixture_data:
+                    break
 
             if not full_competition_link:
                 raise ValueError("Competition link not found")
