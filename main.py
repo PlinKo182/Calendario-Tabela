@@ -1,5 +1,4 @@
-import { injectSpeedInsights } from '@vercel/speed-insights';
-injectSpeedInsights();
+from vercel.speed_insights import injectSpeedInsights
 import requests
 from bs4 import BeautifulSoup
 from fastapi import FastAPI, Query
