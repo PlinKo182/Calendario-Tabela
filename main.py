@@ -1,65 +1,30 @@
-import requests
-from bs4 import BeautifulSoup
-from fastapi import FastAPI, Query
-from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import RedirectResponse, JSONResponse
-from typing import List
-from pydantic import BaseModel
 from datetime import datetime
+from bs4 import BeautifulSoup
+import requests
 import pandas as pd
+from fastapi import FastAPI, Query
+from fastapi.responses import JSONResponse
 
-# Define base_url
-base_url = "https://www.transfermarkt.pt"
+app = FastAPI()
 
-# Mapping of English month names to Portuguese equivalents
-month_mapping = {
-    'Jan': 'Jan',
-    'Feb': 'Fev',
-    'Mar': 'Mar',
-    'Apr': 'Abr',
-    'May': 'Mai',
-    'Jun': 'Jun',
-    'Jul': 'Jul',
-    'Aug': 'Ago',
-    'Sep': 'Set',
-    'Oct': 'Out',
-    'Nov': 'Nov',
-    'Dec': 'Dez',
-}
+class CompetitionDataItem:
+    def __init__(self, Posição, Nome, Jogos, Empates, Pontos):
+        self.Posição = Posição
+        self.Nome = Nome
+        self.Jogos = Jogos
+        self.Empates = Empates
+        self.Pontos = Pontos
 
-class FixtureDataItem(BaseModel):
-    Jornada: str
-    Data: str
-    Hora: str
-    Equipa_da_casa: str
-    Resultado: str
-    Equipa_visitante: str
+class CompetitionDataResponse:
+    def __init__(self, success, fixture_data, competition_data, error_message=None):
+        self.success = success
+        self.fixture_data = fixture_data
+        self.competition_data = competition_data
+        self.error_message = error_message
 
-class CompetitionDataItem(BaseModel):
-    Posição: str
-    Nome: str
-    Jogos: str
-    Empates: str
-    Pontos: str
-
-class FixtureDataResponse(BaseModel):
-    fixture_data: List[FixtureDataItem]
-
-class CompetitionDataResponse(BaseModel):
-    success: bool
-    fixture_data: List[FixtureDataItem] = []
-    competition_data: List[CompetitionDataItem] = []
-    error_message: str = None
-
-app = FastAPI(title="Calendario das Equipas", swagger_ui_parameters={"defaultModelsExpandDepth": -1})
-
-# Redirect root to Swagger UI
-@app.get("/", include_in_schema=False)
-def docs_redirect():
-    return RedirectResponse(url="/docs")
-
-@app.get("/transfermarkt", response_model=CompetitionDataResponse, summary="ID", tags=["Procurar"])
-def scrape_website(id: int = Query(1237, description="ID da equipa transfermarkt")):
+@app.get("/scrape_website")
+async def scrape_website(id: int = Query(1237, description="ID da equipa transfermarkt")):
+    base_url = "https://www.transfermarkt.pt"
     url = f"https://www.transfermarkt.pt/-/spielplan/verein/{id}/saison_id/2023/plus/1#"
     headers = {
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.3"
@@ -99,44 +64,30 @@ def scrape_website(id: int = Query(1237, description="ID da equipa transfermarkt
                             # Extracting relevant data only if the matchday is present
                             jornada = row.select_one('td:nth-of-type(1) a')
                             if jornada:
-                            # Parsing and formatting the date using datetime (without dateutil.parser)
-                            data_original = row.select_one('td:nth-of-type(2)').get_text(strip=True)
+                                # Parsing and formatting the date using datetime (without dateutil.parser)
+                                data_original = row.select_one('td:nth-of-type(2)').get_text(strip=True)
+                                data_original = data_original.split(' ', 1)[1]
+                                custom_date_format = "%d/%m/%Y"
+                                data_obj = datetime.strptime(data_original, custom_date_format)
+                                google_sheets_date_format = data_obj.strftime("%Y-%m-%d")
+                                hora = row.select_one('td:nth-of-type(3)').get_text(strip=True)
+                                equipe_casa = row.select_one('td:nth-of-type(5) a').get_text(strip=True)
+                                equipe_visitante = row.select_one('td:nth-of-type(7) a').get_text(strip=True)
+                                resultado_span = row.select_one('td:nth-of-type(11) span')
+                                resultado = resultado_span.get_text(strip=True) if resultado_span else '-'
 
-                            # Remove day abbreviation (e.g., 'sáb')
-                            data_original = data_original.split(' ', 1)[1]  # Remove the first word
-
-                            # Define a custom format for this date
-                            custom_date_format = "%d/%m/%Y"
-                            data_obj = datetime.strptime(data_original, custom_date_format)
-                                
-                            # Format the date for Google Sheets
-                            google_sheets_date_format = data_obj.strftime("%Y-%m-%d")
-
-                            hora = row.select_one('td:nth-of-type(3)').get_text(strip=True)
-                            equipe_casa = row.select_one('td:nth-of-type(5) a').get_text(strip=True)
-                            equipe_visitante = row.select_one('td:nth-of-type(7) a').get_text(strip=True)
-
-                            # Modify the way of getting the result
-                            resultado_span = row.select_one('td:nth-of-type(11) span')
-                            resultado = resultado_span.get_text(strip=True) if resultado_span else '-'
-
-                            # Append data to the list
-                            scraped_fixture_data.append({
-                                "Jornada": jornada.get_text(strip=True),
-                                "Data": google_sheets_date_format,
-                                "Hora": hora,
-                                "Equipa_da_casa": equipe_casa,
-                                "Resultado": resultado,
-                                "Equipa_visitante": equipe_visitante
-                            })
+                                # Append data to the list
+                                scraped_fixture_data.append({
+                                    "Jornada": jornada.get_text(strip=True),
+                                    "Data": google_sheets_date_format,
+                                    "Hora": hora,
+                                    "Equipa_da_casa": equipe_casa,
+                                    "Resultado": resultado,
+                                    "Equipa_visitante": equipe_visitante
+                                })
 
             if not full_competition_link:
                 raise ValueError("Competition link not found")
-
-            # Define headers within the function
-            headers = {
-                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.3"
-            }
 
             # Continue with the rest of your code
             response = requests.get(full_competition_link, headers=headers)
