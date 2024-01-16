@@ -101,7 +101,7 @@ def scrape_website(id: int = Query(1237, description="ID da equipa transfermarkt
                             if jornada:
                                 # Parsing and formatting the date using datetime (without dateutil.parser)
                                 data_original = row.select_one('td:nth-of-type(2)').get_text(strip=True)
-                                data_original = data_original.split(' ', 1)[1]
+                                data_original = data_original.split(' ', 1)[1]  # Remove the first word
                                 custom_date_format = "%d/%m/%Y"
                                 data_obj = datetime.strptime(data_original, custom_date_format)
                                 google_sheets_date_format = data_obj.strftime("%Y-%m-%d")
@@ -129,40 +129,41 @@ def scrape_website(id: int = Query(1237, description="ID da equipa transfermarkt
                 "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.3"
             }
 
-            # Continue with the rest of your code
-            response = requests.get(full_competition_link, headers=headers)
-            response.raise_for_status()
+            # Continue with the rest of your code only if there are more than 13 rows in the tbody
+            if len(tbody_rows) > 13:
+                response = requests.get(full_competition_link, headers=headers)
+                response.raise_for_status()
 
-            soup = BeautifulSoup(response.text, 'html.parser')
-            div_yw1 = soup.find('div', {'id': 'yw1', 'class': 'grid-view'})
-            rows = div_yw1.find_all('tr')
+                soup = BeautifulSoup(response.text, 'html.parser')
+                div_yw1 = soup.find('div', {'id': 'yw1', 'class': 'grid-view'})
+                rows = div_yw1.find_all('tr')
 
-            data = []
-            for row in rows:
-                cols = row.find_all(['td', 'th'])
-                cols = [col.get_text(strip=True) for col in cols]
-                data.append(cols)
+                data = []
+                for row in rows:
+                    cols = row.find_all(['td', 'th'])
+                    cols = [col.get_text(strip=True) for col in cols]
+                    data.append(cols)
 
-            df = pd.DataFrame(data)
-            df = df.drop([4, 6, 7, 8], axis=1)
-            df = df[1:]
+                df = pd.DataFrame(data)
+                df = df.drop([4, 6, 7, 8], axis=1)
+                df = df[1:]
 
-            # Convert DataFrame to dictionary
-            data_dict = df.to_dict(orient='split')['data']
+                # Convert DataFrame to dictionary
+                data_dict = df.to_dict(orient='split')['data']
 
-            # Construct CompetitionDataItem instances
-            competition_data_items = []
-            for item in data_dict:
-                competition_data_items.append(CompetitionDataItem(
-                    Posição=item[0],
-                    Nome=item[2],
-                    Jogos=item[3],
-                    Empates=item[4],
-                    Pontos=item[5]
-                ))
+                # Construct CompetitionDataItem instances
+                competition_data_items = []
+                for item in data_dict:
+                    competition_data_items.append(CompetitionDataItem(
+                        Posição=item[0],
+                        Nome=item[2],
+                        Jogos=item[3],
+                        Empates=item[4],
+                        Pontos=item[5]
+                    ))
 
-            response_model = CompetitionDataResponse(success=True, fixture_data=scraped_fixture_data, competition_data=competition_data_items)
-            return JSONResponse(content=response_model.dict())
+                response_model = CompetitionDataResponse(success=True, fixture_data=scraped_fixture_data, competition_data=competition_data_items)
+                return JSONResponse(content=response_model.dict())
 
     except Exception as e:
         response_model = CompetitionDataResponse(success=False, error_message=str(e))
