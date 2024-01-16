@@ -36,7 +36,7 @@ class FixtureDataItem(BaseModel):
     Equipa_visitante: str
 
 class CompetitionDataItem(BaseModel):
-    PosiÃ§Ã£o: str
+    Posicao: str
     Nome: str
     Jogos: str
     Empates: str
@@ -160,7 +160,7 @@ def scrape_website(id: int = Query(1237, description="ID da equipa transfermarkt
             competition_data_items = []
             for item in data_dict:
                 competition_data_items.append(CompetitionDataItem(
-                    PosiÃ§Ã£o=item[0],
+                    Posicao=item[0],
                     Nome=item[2],
                     Jogos=item[3],
                     Empates=item[4],
