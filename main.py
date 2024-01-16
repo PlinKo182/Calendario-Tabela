@@ -93,44 +93,45 @@ def scrape_website(id: int = Query(1237, description="ID da equipa transfermarkt
                 if table:
                     # Check if the table has more than 13 rows in the tbody
                     tbody_rows = table.select('tbody tr')
-                    if len(tbody_rows) > 13:
-                        # Iterating over the rows of the table
-                        for row in tbody_rows:
-                            # Extracting relevant data only if the matchday is present
-                            jornada = row.select_one('td:nth-of-type(1) a')
-                            if jornada:
-                                # Parsing and formatting the date using datetime (without dateutil.parser)
-                                data_original = row.select_one('td:nth-of-type(2)').get_text(strip=True)
-                                data_original = data_original.split(' ', 1)[1]  # Remove the first word
-                                custom_date_format = "%d/%m/%Y"
-                                data_obj = datetime.strptime(data_original, custom_date_format)
-                                google_sheets_date_format = data_obj.strftime("%Y-%m-%d")
-                                hora = row.select_one('td:nth-of-type(3)').get_text(strip=True)
-                                equipe_casa = row.select_one('td:nth-of-type(5) a').get_text(strip=True)
-                                equipe_visitante = row.select_one('td:nth-of-type(7) a').get_text(strip=True)
-                                resultado_span = row.select_one('td:nth-of-type(11) span')
-                                resultado = resultado_span.get_text(strip=True) if resultado_span else '-'
+                    if len(tbody_rows) <= 13:
+                        # Se o número de linhas for menor ou igual a 13, pule esta iteração
+                        continue
 
-                                # Append data to the list
-                                scraped_fixture_data.append({
-                                    "Jornada": jornada.get_text(strip=True),
-                                    "Data": google_sheets_date_format,
-                                    "Hora": hora,
-                                    "Equipa_da_casa": equipe_casa,
-                                    "Resultado": resultado,
-                                    "Equipa_visitante": equipe_visitante
-                                })
+                    # Iterating over the rows of the table
+                    for row in tbody_rows:
+                        # Extracting relevant data only if the matchday is present
+                        jornada = row.select_one('td:nth-of-type(1) a')
+                        if jornada:
+                            # Parsing and formatting the date using datetime (without dateutil.parser)
+                            data_original = row.select_one('td:nth-of-type(2)').get_text(strip=True)
+                            data_original = data_original.split(' ', 1)[1]
+                            custom_date_format = "%d/%m/%Y"
+                            data_obj = datetime.strptime(data_original, custom_date_format)
+                            google_sheets_date_format = data_obj.strftime("%Y-%m-%d")
+                            hora = row.select_one('td:nth-of-type(3)').get_text(strip=True)
+                            equipe_casa = row.select_one('td:nth-of-type(5) a').get_text(strip=True)
+                            equipe_visitante = row.select_one('td:nth-of-type(7) a').get_text(strip=True)
+                            resultado_span = row.select_one('td:nth-of-type(11) span')
+                            resultado = resultado_span.get_text(strip=True) if resultado_span else '-'
 
-            if not full_competition_link:
-                raise ValueError("Competition link not found")
+                            # Append data to the list
+                            scraped_fixture_data.append({
+                                "Jornada": jornada.get_text(strip=True),
+                                "Data": google_sheets_date_format,
+                                "Hora": hora,
+                                "Equipa_da_casa": equipe_casa,
+                                "Resultado": resultado,
+                                "Equipa_visitante": equipe_visitante
+                            })
 
-            # Define headers within the function
-            headers = {
-                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.3"
-            }
+            # Agora, execute o código relacionado a scraped_fixture_data apenas se houver dados suficientes
+            if len(scraped_fixture_data) > 0:
+                # Define headers within the function
+                headers = {
+                    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.3"
+                }
 
-            # Continue with the rest of your code only if there are more than 13 rows in the tbody
-            if len(tbody_rows) > 13:
+                # Continue with the rest of your code
                 response = requests.get(full_competition_link, headers=headers)
                 response.raise_for_status()
 
