@@ -91,11 +91,14 @@ def scrape_website(id: int = Query(1237, description="ID da equipa transfermarkt
                 # Finding the table of games within the box
                 table = box.find('table')
                 if table:
-                    # Iterating over the rows of the table
-                    for row in table.select('tbody tr'):
-                        # Extracting relevant data only if the matchday is present
-                        jornada = row.select_one('td:nth-of-type(1) a')
-                        if jornada:
+                    # Check if the table has more than 13 rows in the tbody
+                    tbody_rows = table.select('tbody tr')
+                    if len(tbody_rows) > 13:
+                        # Iterating over the rows of the table
+                        for row in tbody_rows:
+                            # Extracting relevant data only if the matchday is present
+                            jornada = row.select_one('td:nth-of-type(1) a')
+                            if jornada:
                             # Parsing and formatting the date using datetime (without dateutil.parser)
                             data_original = row.select_one('td:nth-of-type(2)').get_text(strip=True)
 
