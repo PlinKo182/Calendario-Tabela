@@ -93,7 +93,7 @@ def scrape_website(id: int = Query(1237, description="ID da equipa transfermarkt
                 if table:
                     # Check if the table has more than 13 rows in the tbody
                     tbody_rows = table.select('tbody tr')
-                    if len(tbody_rows) <= 13:
+                    if len(tbody_rows) <= 14:
                         # Se o número de linhas for menor ou igual a 13, pule esta iteração
                         continue
 
@@ -164,6 +164,10 @@ def scrape_website(id: int = Query(1237, description="ID da equipa transfermarkt
                     ))
 
                 response_model = CompetitionDataResponse(success=True, fixture_data=scraped_fixture_data, competition_data=competition_data_items)
+                return JSONResponse(content=response_model.dict())
+            else:
+                # Se não houver dados suficientes, retorne uma resposta vazia com sucesso
+                response_model = CompetitionDataResponse(success=True)
                 return JSONResponse(content=response_model.dict())
 
     except Exception as e:
