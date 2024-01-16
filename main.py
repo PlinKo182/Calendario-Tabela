@@ -91,41 +91,35 @@ def scrape_website(id: int = Query(1237, description="ID da equipa transfermarkt
                 # Finding the table of games within the box
                 table = box.find('table')
                 if table:
-                    # Iterating over the rows of the table
-                    for row in table.select('tbody tr'):
-                        # Extracting relevant data only if the matchday is present
-                        jornada = row.select_one('td:nth-of-type(1) a')
-                        if jornada:
-                            # Parsing and formatting the date using datetime (without dateutil.parser)
-                            data_original = row.select_one('td:nth-of-type(2)').get_text(strip=True)
+                    # Check if the table has more than 13 rows in the tbody
+                    tbody_rows = table.select('tbody tr')
+                    if len(tbody_rows) > 13:
+                        # Iterating over the rows of the table
+                        for row in tbody_rows:
+                            # Extracting relevant data only if the matchday is present
+                            jornada = row.select_one('td:nth-of-type(1) a')
+                            if jornada:
+                                # Parsing and formatting the date using datetime (without dateutil.parser)
+                                data_original = row.select_one('td:nth-of-type(2)').get_text(strip=True)
+                                data_original = data_original.split(' ', 1)[1]
+                                custom_date_format = "%d/%m/%Y"
+                                data_obj = datetime.strptime(data_original, custom_date_format)
+                                google_sheets_date_format = data_obj.strftime("%Y-%m-%d")
+                                hora = row.select_one('td:nth-of-type(3)').get_text(strip=True)
+                                equipe_casa = row.select_one('td:nth-of-type(5) a').get_text(strip=True)
+                                equipe_visitante = row.select_one('td:nth-of-type(7) a').get_text(strip=True)
+                                resultado_span = row.select_one('td:nth-of-type(11) span')
+                                resultado = resultado_span.get_text(strip=True) if resultado_span else '-'
 
-                            # Remove day abbreviation (e.g., 'sÃ¡b')
-                            data_original = data_original.split(' ', 1)[1]  # Remove the first word
-
-                            # Define a custom format for this date
-                            custom_date_format = "%d/%m/%Y"
-                            data_obj = datetime.strptime(data_original, custom_date_format)
-                                
-                            # Format the date for Google Sheets
-                            google_sheets_date_format = data_obj.strftime("%Y-%m-%d")
-
-                            hora = row.select_one('td:nth-of-type(3)').get_text(strip=True)
-                            equipe_casa = row.select_one('td:nth-of-type(5) a').get_text(strip=True)
-                            equipe_visitante = row.select_one('td:nth-of-type(7) a').get_text(strip=True)
-
-                            # Modify the way of getting the result
-                            resultado_span = row.select_one('td:nth-of-type(11) span')
-                            resultado = resultado_span.get_text(strip=True) if resultado_span else '-'
-
-                            # Append data to the list
-                            scraped_fixture_data.append({
-                                "Jornada": jornada.get_text(strip=True),
-                                "Data": google_sheets_date_format,
-                                "Hora": hora,
-                                "Equipa_da_casa": equipe_casa,
-                                "Resultado": resultado,
-                                "Equipa_visitante": equipe_visitante
-                            })
+                                # Append data to the list
+                                scraped_fixture_data.append({
+                                    "Jornada": jornada.get_text(strip=True),
+                                    "Data": google_sheets_date_format,
+                                    "Hora": hora,
+                                    "Equipa_da_casa": equipe_casa,
+                                    "Resultado": resultado,
+                                    "Equipa_visitante": equipe_visitante
+                                })
 
             if not full_competition_link:
                 raise ValueError("Competition link not found")
@@ -141,13 +135,6 @@ def scrape_website(id: int = Query(1237, description="ID da equipa transfermarkt
 
             soup = BeautifulSoup(response.text, 'html.parser')
             div_yw1 = soup.find('div', {'id': 'yw1', 'class': 'grid-view'})
-            
-            # Check if there are more than 13 tr elements inside tbody
-            tbody = div_yw1.find('tbody')
-            tr_elements = tbody.find_all('tr')
-            if len(tr_elements) <= 13:
-                raise ValueError("Less than 13 tr elements in tbody")
-
             rows = div_yw1.find_all('tr')
 
             data = []
