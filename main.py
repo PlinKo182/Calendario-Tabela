@@ -1,26 +1,15 @@
 import requests
 from bs4 import BeautifulSoup
-from fastapi import FastAPI, Query, HTTPException
+from fastapi import FastAPI, Query
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import RedirectResponse, JSONResponse
-from typing import List, Any, Union
+from typing import List
 from pydantic import BaseModel
 from datetime import datetime
 import pandas as pd
 
 # Define base_url
 base_url = "https://www.transfermarkt.pt"
-
-# Mapping of Portuguese day abbreviations to English equivalents
-day_mapping = {
-    'dom': 'Sun',
-    'seg': 'Mon',
-    'ter': 'Tue',
-    'qua': 'Wed',
-    'qui': 'Thu',
-    'sex': 'Fri',
-    'sáb': 'Sat',
-}
 
 # Mapping of English month names to Portuguese equivalents
 month_mapping = {
@@ -46,18 +35,20 @@ class FixtureDataItem(BaseModel):
     Resultado: str
     Equipa_visitante: str
 
+class CompetitionDataItem(BaseModel):
+    PosiÃ§Ã£o: str
+    Nome: str
+    Jogos: str
+    Empates: str
+    Pontos: str
+
 class FixtureDataResponse(BaseModel):
     fixture_data: List[FixtureDataItem]
 
-class CompetitionDataItem(BaseModel):
-    # Define the structure for each competition data item if needed
-    # Example: team_name: str, points: int, etc.
-    pass
-
 class CompetitionDataResponse(BaseModel):
     success: bool
-    fixture_data: List[FixtureDataItem] = None  # Include fixture data in the competition response
-    competition_data: List[CompetitionDataItem] = None  # Include competition data
+    fixture_data: List[FixtureDataItem] = []
+    competition_data: List[CompetitionDataItem] = []
     error_message: str = None
 
 app = FastAPI(title="Calendario das Equipas", swagger_ui_parameters={"defaultModelsExpandDepth": -1})
@@ -88,14 +79,15 @@ def scrape_website(id: int = Query(1237, description="ID da equipa transfermarkt
             # Change the URL to '/tabelle/wettbewerb/'
             full_competition_link = f"{base_url}{href_value.replace('/startseite/wettbewerb/', '/tabelle/wettbewerb/')}"
             print(f"Full Competition Link: {full_competition_link}")
-            
+
             # Extract fixture data
             scraped_fixture_data = []
 
             # Finding all divs with the class 'box'
             boxes = soup.find_all('div', class_='box')
 
-                        for box in boxes:
+            # Iterating over the divs found
+            for box in boxes:
                 # Finding the table of games within the box
                 table = box.find('table')
                 if table:
@@ -107,13 +99,13 @@ def scrape_website(id: int = Query(1237, description="ID da equipa transfermarkt
                             # Parsing and formatting the date using datetime (without dateutil.parser)
                             data_original = row.select_one('td:nth-of-type(2)').get_text(strip=True)
 
-                            # Remove day abbreviation (e.g., 'sáb')
+                            # Remove day abbreviation (e.g., 'sÃ¡b')
                             data_original = data_original.split(' ', 1)[1]  # Remove the first word
 
                             # Define a custom format for this date
                             custom_date_format = "%d/%m/%Y"
                             data_obj = datetime.strptime(data_original, custom_date_format)
-
+                                
                             # Format the date for Google Sheets
                             google_sheets_date_format = data_obj.strftime("%Y-%m-%d")
 
@@ -127,17 +119,14 @@ def scrape_website(id: int = Query(1237, description="ID da equipa transfermarkt
 
                             # Append data to the list
                             scraped_fixture_data.append({
-                           "Jornada": jornada.get_text(strip=True),
-                            "Data": google_sheets_date_format,
-                            "Hora": hora,
-                            "Equipa_da_casa": equipe_casa,
-                            "Resultado": resultado,
-                            "Equipa_visitante": equipe_visitante
+                                "Jornada": jornada.get_text(strip=True),
+                                "Data": google_sheets_date_format,
+                                "Hora": hora,
+                                "Equipa_da_casa": equipe_casa,
+                                "Resultado": resultado,
+                                "Equipa_visitante": equipe_visitante
                             })
 
-                        break
-
-            # Continue with the rest of your code
             if not full_competition_link:
                 raise ValueError("Competition link not found")
 
@@ -167,10 +156,19 @@ def scrape_website(id: int = Query(1237, description="ID da equipa transfermarkt
             # Convert DataFrame to dictionary
             data_dict = df.to_dict(orient='split')['data']
 
-            return CompetitionDataResponse(success=True, fixture_data=scraped_fixture_data, competition_data=data_dict)
+            # Construct CompetitionDataItem instances
+            competition_data_items = []
+            for item in data_dict:
+                competition_data_items.append(CompetitionDataItem(
+                    PosiÃ§Ã£o=item[0],
+                    Nome=item[2],
+                    Jogos=item[3],
+                    Empates=item[4],
+                    Pontos=item[5]
+                ))
 
-        else:
-            return CompetitionDataResponse(success=False, error_message="Competition link not found")
+            response_model = CompetitionDataResponse(success=True, fixture_data=scraped_fixture_data, competition_data=competition_data_items)
+            return JSONResponse(content=response_model.dict())
 
     except Exception as e:
         response_model = CompetitionDataResponse(success=False, error_message=str(e))
