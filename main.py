@@ -36,7 +36,7 @@ class FixtureDataItem(BaseModel):
     Equipa_visitante: str
 
 class CompetitionDataItem(BaseModel):
-    Posicao: str
+    Posição: str
     Nome: str
     Jogos: str
     Empates: str
@@ -141,6 +141,13 @@ def scrape_website(id: int = Query(1237, description="ID da equipa transfermarkt
 
             soup = BeautifulSoup(response.text, 'html.parser')
             div_yw1 = soup.find('div', {'id': 'yw1', 'class': 'grid-view'})
+            
+            # Check if there are more than 13 tr elements inside tbody
+            tbody = div_yw1.find('tbody')
+            tr_elements = tbody.find_all('tr')
+            if len(tr_elements) <= 13:
+                raise ValueError("Less than 13 tr elements in tbody")
+
             rows = div_yw1.find_all('tr')
 
             data = []
@@ -160,7 +167,7 @@ def scrape_website(id: int = Query(1237, description="ID da equipa transfermarkt
             competition_data_items = []
             for item in data_dict:
                 competition_data_items.append(CompetitionDataItem(
-                    Posicao=item[0],
+                    PosiÃ§Ã£o=item[0],
                     Nome=item[2],
                     Jogos=item[3],
                     Empates=item[4],
