@@ -99,32 +99,33 @@ def scrape_website(id: int = Query(1237, description="ID da equipa transfermarkt
 
                     # Iterating over the rows of the table
                     for row in tbody_rows:
-                        # Extracting relevant data only if the matchday is present
-                        jornada = row.select_one('td:nth-of-type(1) a')
-                        if jornada:
-                            # Parsing and formatting the date using datetime (without dateutil.parser)
-                            data_original = row.select_one('td:nth-of-type(2)').get_text(strip=True)
-                            data_original = data_original.split(' ', 1)[1]
-                            custom_date_format = "%d/%m/%Y"
-                            data_obj = datetime.strptime(data_original, custom_date_format)
-                            google_sheets_date_format = data_obj.strftime("%Y-%m-%d")
-                            hora = row.select_one('td:nth-of-type(3)').get_text(strip=True)
-                            equipe_casa = row.select_one('td:nth-of-type(5) a').get_text(strip=True)
-                            equipe_visitante = row.select_one('td:nth-of-type(7) a').get_text(strip=True)
-                            resultado_span = row.select_one('td:nth-of-type(11) span')
+    # Extracting relevant data only if the matchday is present
+    jornada = row.select_one('td:nth-of-type(1) a')
+    if jornada:
+        # Parsing and formatting the date using datetime (without dateutil.parser)
+        data_original = row.select_one('td:nth-of-type(2)').get_text(strip=True)
+        data_original = data_original.split(' ', 1)[1]
+        custom_date_format = "%d/%m/%Y"
+        data_obj = datetime.strptime(data_original, custom_date_format)
+        google_sheets_date_format = data_obj.strftime("%Y-%m-%d")
+        hora = row.select_one('td:nth-of-type(3)').get_text(strip=True)
+        equipe_casa = row.select_one('td:nth-of-type(5) a').get_text(strip=True)
+        equipe_visitante = row.select_one('td:nth-of-type(7) a').get_text(strip=True)
+        resultado_span = row.select_one('td:nth-of-type(11) span')
 
-                            # Check if the result indicates the match is postponed
-                            resultado = "ADI" if resultado_span and "adiado" in resultado_span.get_text(strip=True).lower() else '-:-'
+        # Check if the result indicates the match is postponed
+        resultado_text = resultado_span.get_text(strip=True) if resultado_span else ''
+        resultado = "ADI" if "adiado" in resultado_text.lower() else '-:-'
 
-                            # Append data to the list
-                            scraped_fixture_data.append({
-                                "Jornada": jornada.get_text(strip=True),
-                                "Data": google_sheets_date_format,
-                                "Hora": hora,
-                                "Equipa_da_casa": equipe_casa,
-                                "Resultado": resultado,
-                                "Equipa_visitante": equipe_visitante
-                            })
+        # Append data to the list
+        scraped_fixture_data.append({
+            "Jornada": jornada.get_text(strip=True),
+            "Data": google_sheets_date_format,
+            "Hora": hora,
+            "Equipa_da_casa": equipe_casa,
+            "Resultado": resultado,
+            "Equipa_visitante": equipe_visitante
+        })
 
             # Agora, execute o código relacionado a scraped_fixture_data apenas se houver dados suficientes
             if len(scraped_fixture_data) > 0:
