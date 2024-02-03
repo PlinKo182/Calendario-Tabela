@@ -114,6 +114,10 @@ def scrape_website(id: int = Query(1237, description="ID da equipa transfermarkt
                             resultado_span = row.select_one('td:nth-of-type(11) span')
                             resultado = resultado_span.get_text(strip=True) if resultado_span else '-:-'
 
+                            # Check if the result indicates the match is postponed
+                            if "adiado" in resultado.lower():
+                                resultado = "ADI"
+
                             # Append data to the list
                             scraped_fixture_data.append({
                                 "Jornada": jornada.get_text(strip=True),
@@ -173,3 +177,4 @@ def scrape_website(id: int = Query(1237, description="ID da equipa transfermarkt
     except Exception as e:
         response_model = CompetitionDataResponse(success=False, error_message=str(e))
         return JSONResponse(content=response_model.dict())
+
