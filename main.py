@@ -111,7 +111,7 @@ def scrape_website(id: int = Query(1237, description="ID da equipa transfermarkt
                             hora = row.select_one('td:nth-of-type(3)').get_text(strip=True)
                             equipe_casa = row.select_one('td:nth-of-type(5) a').get_text(strip=True)
                             equipe_visitante = row.select_one('td:nth-of-type(7) a').get_text(strip=True)
-                            resultado = row.select_one('td:nth-of-type(11) span')
+                            resultado = row.select_one('td:nth-of-type(11) span').string
 
                             # Append data to the list
                             scraped_fixture_data.append({
