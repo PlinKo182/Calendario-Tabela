@@ -115,7 +115,7 @@ def scrape_website(id: int = Query(1237, description="ID da equipa transfermarkt
 
                             # Check if the result indicates the match is postponed
                             resultado_text = resultado_span.get_text(strip=True).lower() if resultado_span else ''
-                            resultado = "ADI" if "adiado" in resultado_text else resultado_text if resultado_text else '-:-'
+                            resultado = "ADI" if "adiado" in resultado_text else resultado_text if resultado_text and resultado_text != '-:-' else '-:-'
 
                             # Append data to the list
                             scraped_fixture_data.append({
