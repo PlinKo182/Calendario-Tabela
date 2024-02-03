@@ -53,7 +53,16 @@ class CompetitionDataResponse(BaseModel):
 
 app = FastAPI(title="Calendario das Equipas", swagger_ui_parameters={"defaultModelsExpandDepth": -1})
 
-# Redirect root to Swagger UI
+# Adicionando middleware para permitir CORS
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+# Redireciona a raiz para o Swagger UI
 @app.get("/", include_in_schema=False)
 def docs_redirect():
     return RedirectResponse(url="/docs")
@@ -111,8 +120,13 @@ def scrape_website(id: int = Query(1237, description="ID da equipa transfermarkt
                             hora = row.select_one('td:nth-of-type(3)').get_text(strip=True)
                             equipe_casa = row.select_one('td:nth-of-type(5) a').get_text(strip=True)
                             equipe_visitante = row.select_one('td:nth-of-type(7) a').get_text(strip=True)
-                            resultado_span = row.select_one('td:nth-of-type(11) span')
-                            resultado = resultado_span.get_text(strip=True) if resultado_span else '-:-'
+
+                            # Get the resultado cell
+                            resultado_cell = row.select_one('td:nth-of-type(11)')
+
+                            # Check if the resultado cell contains an anchor tag with title "adiado"
+                            resultado_adiado = resultado_cell.select_one('a[title="adiado"]')
+                            resultado = "ADI" if resultado_adiado else resultado_cell.get_text(strip=True)
 
                             # Append data to the list
                             scraped_fixture_data.append({
