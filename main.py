@@ -112,11 +112,9 @@ def scrape_website(id: int = Query(1237, description="ID da equipa transfermarkt
                             equipe_casa = row.select_one('td:nth-of-type(5) a').get_text(strip=True)
                             equipe_visitante = row.select_one('td:nth-of-type(7) a').get_text(strip=True)
                             resultado_span = row.select_one('td:nth-of-type(11) span')
-                            resultado = resultado_span.get_text(strip=True) if resultado_span else '-:-'
 
                             # Check if the result indicates the match is postponed
-                            if "adiado" in resultado.lower():
-                                resultado = "ADI"
+                            resultado = "ADI" if resultado_span and "adiado" in resultado_span.get_text(strip=True).lower() else '-:-'
 
                             # Append data to the list
                             scraped_fixture_data.append({
@@ -177,4 +175,3 @@ def scrape_website(id: int = Query(1237, description="ID da equipa transfermarkt
     except Exception as e:
         response_model = CompetitionDataResponse(success=False, error_message=str(e))
         return JSONResponse(content=response_model.dict())
-
